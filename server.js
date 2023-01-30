@@ -8,46 +8,61 @@ const client = ldap.createClient({
   url: "ldap://docky.netlor.fr:3722",
 });
 
-client.bind("cn=admin,dc=groupe2,dc=com", "azertyuiop", function (err) {
-  if (err) {
-    return console.error("err:", err);
-  }
+app.get("/person/:person", (req, res) => {
+  client.bind("cn=admin,dc=groupe2,dc=com", "azertyuiop", function (err) {
+    if (err) {
+      return console.error("err:", err);
+    }
 
-  console.log("bind success");
+    const opts = {
+      cn: req.params.person,
+      objectclass: "person",
+    };
 
-  //   const opts = {
-  //     filter: "(cn=hilel)",
-  //     scope: "sub",
-  //     attributes: ["dn", "cn", "sn", "mail"],
-  //   };
-
-  const opts = {
-    cn: "hilel",
-    objectclass: "person",
-  };
-
-  client.search("cn=hilel,dc=groupe2,dc=com", opts, function (err, res) {
-    res.on("searchEntry", function (entry) {
-      console.log("entry: " + JSON.stringify(entry.object));
-    });
-    res.on("error", function (err) {
-      console.error("error: " + err.message);
-    });
-    res.on("end", function (result) {
-      console.log("status: " + result.status);
-    });
+    client.search(
+      `cn=${req.params.person},dc=groupe2,dc=com`,
+      opts,
+      function (err, response) {
+        response.on("searchEntry", function (entry) {
+          res.send(entry.object);
+        });
+        response.on("error", function (err) {
+          res.send({
+            error: err.message,
+          });
+        });
+        response.on("end", function (result) {
+          console.log("status: " + result.status);
+        });
+      }
+    );
   });
 });
 
-// client.unbind(function (err) {
-//     if (err) {
-//         return console.error("err:", err);
-//     }
-//     console.log("unbind success");
-// });
+app.get("/list", (req, res) => {
+    client.bind("cn=admin,dc=groupe2,dc=com", "azertyuiop", function (err) {
+        if (err) {
+            return console.error("err:", err);
+        }
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
+        const opts = {
+            objectclass: "person",
+        };
+
+        client.search("dc=groupe2,dc=com", opts, function (err, response) {
+            response.on("searchEntry", function (entry) {
+                res.send(entry.object);
+            });
+            response.on("error", function (err) {
+                res.send({
+                    error: err.message,
+                });
+            });
+            response.on("end", function (result) {
+                console.log("status: " + result.status);
+            });
+        });
+    });
 });
 
 app.listen(port, () => {
